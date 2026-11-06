@@ -14,6 +14,8 @@ from __future__ import annotations
 
 import argparse
 import getpass
+import secrets
+import string
 import sys
 from pathlib import Path
 
@@ -26,18 +28,36 @@ from config import Config  # noqa: E402
 from models import db  # noqa: E402
 
 
+def generate_password(length: int = 20) -> str:
+    """Random password that satisfies password_errors() on the first try."""
+    alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
+    while True:
+        candidate = "".join(secrets.choice(alphabet) for _ in range(length))
+        # Guarantee one character from every required class.
+        if not password_errors(candidate):
+            return candidate
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Set a SkillTrack AI password.")
     parser.add_argument("email", help="student email address")
     parser.add_argument("--admin", action="store_true", help="also grant the admin role")
+    parser.add_argument(
+        "--generate",
+        action="store_true",
+        help="generate a random strong password instead of prompting",
+    )
     args = parser.parse_args()
 
     email = args.email.strip().lower()
-    password = getpass.getpass("New password: ")
-    confirm = getpass.getpass("Repeat password: ")
-    if password != confirm:
-        print("Passwords do not match.")
-        return 1
+    if args.generate:
+        password = generate_password()
+    else:
+        password = getpass.getpass("New password: ")
+        confirm = getpass.getpass("Repeat password: ")
+        if password != confirm:
+            print("Passwords do not match.")
+            return 1
 
     problems = password_errors(password)
     if problems:
@@ -63,6 +83,9 @@ def main() -> int:
         db.execute("UPDATE students SET role = 'admin' WHERE id = %s", (row["id"],))
 
     print(f"Password updated for {email} (role: {'admin' if args.admin else row['role']}).")
+    if args.generate:
+        print(f"Generated password: {password}")
+        print("Save it now - it is not stored anywhere in readable form.")
     print("Restart the app if it is running with a cached session.")
     return 0
 

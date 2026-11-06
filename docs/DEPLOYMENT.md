@@ -146,6 +146,13 @@ The seeded passwords are public in this repository. Before sharing the URL:
    .\.venv\Scripts\python.exe database\set_password.py your@email.com --admin
    ```
 
+   Add `--generate` to create a random strong password and print it once
+   instead of typing one:
+
+   ```powershell
+   .\.venv\Scripts\python.exe database\set_password.py admin@skilltrack.local --admin --generate
+   ```
+
 3. Deactivate the seeded admin in the TiDB SQL editor:
 
    ```sql
