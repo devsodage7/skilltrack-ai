@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% block title %}{{ attempt.skill.name }} quiz{% endblock %}
+{% block page_title %}{{ attempt.skill.name }} quiz{% endblock %}
+{% block page_subtitle %}{{ attempt.total }} question(s) &middot; answer at least {{ 3 }} to store quiz evidence.{% endblock %}
+
+{% block content %}
+
+<section class="card-panel quiz-head mb-4">
+  <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+    <div>
+      <h2>{{ attempt.skill.name }}</h2>
+      <p class="mb-0">
+        <span class="chip">{{ attempt.skill.category }}</span>
+        <span class="chip">{{ attempt.bank_count }} validated</span>
+        {% if attempt.generated_count %}
+          <span class="chip chip-generated">{{ attempt.generated_count }} generated</span>
+        {% endif %}
+      </p>
+    </div>
+    <div class="text-md-end">
+      <a class="btn btn-soft btn-sm" href="{{ url_for('assessment.index') }}">Leave quiz</a>
+    </div>
+  </div>
+</section>
+
+<form method="post" action="{{ url_for('assessment.submit', assessment_id=attempt.assessment.id) }}" data-quiz-form>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  <div class="quiz-list">
+    {% for q in attempt.questions %}
+      <section class="card-panel quiz-question">
+        <div class="quiz-meta">
+          <span class="quiz-index">Q{{ loop.index }}</span>
+          <span class="badge text-bg-{{ 'success' if q.difficulty == 'beginner' else ('warning' if q.difficulty == 'intermediate' else 'danger') }}">
+            {{ q.difficulty }}
+          </span>
+          <span class="chip">{{ q.question_type }}</span>
+          {% if q.source == 'manual' %}
+            <span class="chip">validated bank</span>
+          {% else %}
+            <span class="chip chip-generated">generated</span>
+          {% endif %}
+        </div>
+
+        <p class="quiz-text">{{ q.question_text }}</p>
+        {% if q.code_snippet %}
+          <pre class="quiz-code"><code>{{ q.code_snippet }}</code></pre>
+        {% endif %}
+
+        {% if q.is_mcq %}
+          <div class="quiz-options">
+            {% for option in q.options_list %}
+              <label class="quiz-option">
+                <input type="radio" name="choice_{{ q.id }}" value="{{ loop.index0 }}">
+                <span class="option-key">{{ 'ABCD'[loop.index0] }}</span>
+                <span>{{ option }}</span>
+              </label>
+            {% endfor %}
+          </div>
+        {% else %}
+          <label class="form-label small" for="text_{{ q.id }}">Your answer</label>
+          <input class="form-control" id="text_{{ q.id }}" name="text_{{ q.id }}"
+                 placeholder="Type the output or a short answer" autocomplete="off">
+          <p class="form-text mb-0">Text answers accept small wording differences.</p>
+        {% endif %}
+      </section>
+    {% endfor %}
+  </div>
+
+  <div class="quiz-submit">
+    <p class="small text-muted mb-0">
+      Unanswered questions count as incorrect. At least 3 answers are required before quiz evidence is stored.
+    </p>
+    <button class="btn btn-brand" type="submit">Submit quiz</button>
+  </div>
+</form>
+{% endblock %}

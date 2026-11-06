@@ -1,0 +1,266 @@
+{% extends 'base.html' %}
+{% block title %}Performance analysis{% endblock %}
+{% block page_title %}Performance analysis{% endblock %}
+{% block page_subtitle %}Quiz history, per-skill accuracy and how your readiness has moved over time.{% endblock %}
+
+{% block content %}
+
+<section class="card-panel mb-4">
+  <form method="get" class="row g-3 align-items-end">
+    <div class="col-md-5">
+      <label class="form-label" for="career">Career path for the readiness trend</label>
+      <select class="form-select" id="career" name="career" data-autosubmit>
+        {% for c in careers %}
+          <option value="{{ c.id }}" {{ 'selected' if c.id == selected_id }}>{{ c.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3">
+      <button class="btn btn-brand" type="submit">Refresh</button>
+    </div>
+    <div class="col-md-4 text-md-end">
+      <a class="btn btn-soft btn-sm" href="{{ url_for('assessment.index', career=selected_id) }}">Take a quiz</a>
+    </div>
+  </form>
+</section>
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-xl-3">
+    <div class="stat-card">
+      <span class="stat-label">Attempts</span>
+      <span class="stat-value">{{ data.totals.attempts }}</span>
+      <span class="stat-note">completed quizzes</span>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="stat-card">
+      <span class="stat-label">Overall accuracy</span>
+      <span class="stat-value">{{ '%.0f'|format(data.totals.accuracy) }}<small class="stat-unit">%</small></span>
+      <span class="stat-note">{{ data.totals.correct }} / {{ data.totals.total }} answers</span>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="stat-card">
+      <span class="stat-label">Average score</span>
+      <span class="stat-value">{{ '%.0f'|format(data.totals.avg_score) }}<small class="stat-unit">%</small></span>
+      <span class="stat-note">across all attempts</span>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="stat-card">
+      <span class="stat-label">Evidence coverage</span>
+      <span class="stat-value">{{ data.coverage.total }}</span>
+      <span class="stat-note">
+        {{ data.coverage.self }} self &middot; {{ data.coverage.resume }} CV &middot; {{ data.coverage.quiz }} quiz
+      </span>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4 mb-4">
+  <div class="col-lg-7">
+    <section class="card-panel h-100">
+      <div class="panel-head">
+        <h2>Score over time</h2>
+        <p>Every completed attempt in date order.</p>
+      </div>
+      {% if data.score_trend %}
+        <div class="chart-box"><canvas id="scoreTrendChart" aria-label="Quiz score trend"></canvas></div>
+      {% else %}
+        <div class="empty-state"><strong>No attempts yet</strong><p>Take a quiz to start the trend.</p></div>
+      {% endif %}
+    </section>
+  </div>
+
+  <div class="col-lg-5">
+    <section class="card-panel h-100">
+      <div class="panel-head">
+        <h2>Accuracy by skill</h2>
+        <p>Top 10 attempted skills.</p>
+      </div>
+      {% if data.attempted %}
+        <div class="chart-box"><canvas id="skillAccuracyChart" aria-label="Accuracy by skill"></canvas></div>
+      {% else %}
+        <div class="empty-state"><strong>No skill accuracy yet</strong><p>One quiz per skill is enough to start.</p></div>
+      {% endif %}
+    </section>
+  </div>
+</div>
+
+<div class="row g-4 mb-4">
+  <div class="col-lg-7">
+    <section class="card-panel h-100">
+      <div class="panel-head">
+        <h2>Readiness trend - {{ data.career.name if data.career else 'career' }}</h2>
+        <p>
+          Quiz evidence is replayed in date order and the readiness formula is
+          recomputed. Self and resume levels are held at their current values,
+          because only the latest value of those two sources is stored.
+        </p>
+      </div>
+      {% if data.readiness_trend %}
+        <div class="chart-box"><canvas id="readinessTrendChart" aria-label="Readiness trend"></canvas></div>
+      {% else %}
+        <div class="empty-state">
+          <strong>No readiness history yet</strong>
+          <p>Complete a quiz for a skill in this career and the line will appear.</p>
+        </div>
+      {% endif %}
+    </section>
+  </div>
+
+  <div class="col-lg-5">
+    <section class="card-panel h-100">
+      <div class="panel-head">
+        <h2>Readiness across careers</h2>
+        <p>Current weighted score for all 8 paths.</p>
+      </div>
+      <div class="chart-box"><canvas id="careerReadinessChart" aria-label="Readiness by career"></canvas></div>
+    </section>
+  </div>
+</div>
+
+<div class="row g-4 mb-4">
+  <div class="col-md-6">
+    <section class="card-panel h-100">
+      <div class="panel-head"><h2>Strongest quiz skills</h2><p>Highest accuracy with at least one attempt.</p></div>
+      {% if data.strongest %}
+        <ul class="perf-list">
+          {% for row in data.strongest %}
+            <li>
+              <span>{{ row.skill_name }}</span>
+              <strong class="text-success">{{ '%.0f'|format(row.accuracy) }}%</strong>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="text-muted small mb-0">No attempts yet.</p>
+      {% endif %}
+    </section>
+  </div>
+  <div class="col-md-6">
+    <section class="card-panel h-100">
+      <div class="panel-head"><h2>Needs the most work</h2><p>Lowest accuracy with at least one attempt.</p></div>
+      {% if data.weakest %}
+        <ul class="perf-list">
+          {% for row in data.weakest %}
+            <li>
+              <span>{{ row.skill_name }}</span>
+              <strong class="text-danger">{{ '%.0f'|format(row.accuracy) }}%</strong>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="text-muted small mb-0">No attempts yet.</p>
+      {% endif %}
+    </section>
+  </div>
+</div>
+
+<section class="card-panel mb-4">
+  <div class="panel-head d-flex justify-content-between align-items-start gap-3">
+    <div>
+      <h2>Skill evidence table</h2>
+      <p>Every skill with stored evidence or a quiz attempt.</p>
+    </div>
+    <span class="chip">{{ data.skills|length }} skills</span>
+  </div>
+
+  {% if data.skills %}
+    <div class="table-responsive">
+      <table class="table align-middle app-table">
+        <thead>
+          <tr>
+            <th>Skill</th>
+            <th class="text-end">Current</th>
+            <th class="text-end">Self</th>
+            <th class="text-end">CV</th>
+            <th class="text-end">Quiz</th>
+            <th class="text-end">Attempts</th>
+            <th class="text-end">Accuracy</th>
+            <th>Band</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in data.skills %}
+            <tr>
+              <td>
+                <div class="fw-semibold">{{ row.skill_name }}</div>
+                <span class="chip">{{ row.category }}</span>
+              </td>
+              <td class="text-end">{{ '%.1f'|format(row.current_level) }}</td>
+              <td class="text-end text-muted">{{ '%.1f'|format(row.self_level) if row.self_level is not none else '-' }}</td>
+              <td class="text-end text-muted">{{ '%.1f'|format(row.resume_level) if row.resume_level is not none else '-' }}</td>
+              <td class="text-end text-muted">{{ '%.1f'|format(row.quiz_level) if row.quiz_level is not none else '-' }}</td>
+              <td class="text-end">{{ row.attempts }}</td>
+              <td class="text-end fw-semibold">{{ '%.0f'|format(row.accuracy) if row.attempts else '-' }}%</td>
+              <td>
+                <span class="badge text-bg-{{ {'strong': 'success', 'developing': 'info', 'weak': 'warning', 'untested': 'secondary'}.get(row.band, 'secondary') }}">
+                  {{ row.band }}
+                </span>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <strong>Nothing measured yet</strong>
+      <p>Complete your profile, upload a resume or take a quiz.</p>
+    </div>
+  {% endif %}
+</section>
+
+<section class="card-panel">
+  <div class="panel-head">
+    <h2>Recent attempts</h2>
+    <p>Scores, timing and links to the full answer review.</p>
+  </div>
+
+  {% if data.recent %}
+    <div class="table-responsive">
+      <table class="table align-middle app-table">
+        <thead>
+          <tr><th>Started</th><th>Skill</th><th class="text-end">Score</th><th class="text-end">Level</th><th class="text-end">Duration</th><th>Status</th><th class="text-end"></th></tr>
+        </thead>
+        <tbody>
+          {% for item in data.recent %}
+            <tr>
+              <td class="small">{{ item.started_at.strftime('%d %b %Y, %H:%M') if item.started_at else '-' }}</td>
+              <td class="fw-semibold">{{ item.skill_name or 'Mixed' }}</td>
+              <td class="text-end">{{ '%.0f'|format(item.score_pct or 0) }}%</td>
+              <td class="text-end">{{ '%.1f'|format(item.level_awarded) if item.level_awarded is not none else '-' }}</td>
+              <td class="text-end text-muted">{{ ((item.duration_sec / 60)|round(1)) if item.duration_sec else '-' }} min</td>
+              <td>
+                <span class="badge text-bg-{{ 'success' if item.status == 'completed' else ('warning' if item.status == 'in_progress' else 'secondary') }}">
+                  {{ item.status.replace('_', ' ') }}
+                </span>
+              </td>
+              <td class="text-end">
+                {% if item.status == 'completed' %}
+                  <a class="btn btn-sm btn-soft" href="{{ url_for('assessment.result', assessment_id=item.id) }}">Review</a>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="empty-state"><strong>No attempts yet</strong><p>Start with the assessment page.</p></div>
+  {% endif %}
+
+  <p class="small text-muted mb-0 mt-3">
+    Scores and levels come from stored attempts. No accuracy figure on this page
+    is estimated or fabricated: if a number is missing, there is no evidence yet.
+  </p>
+</section>
+
+<script id="performance-data" type="application/json">{{ charts|tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{{ url_for('static', filename='vendor/chart.umd.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/performance.js') }}"></script>
+{% endblock %}

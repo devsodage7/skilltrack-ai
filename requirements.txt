@@ -1,0 +1,40 @@
+# SkillTrack AI - Python dependencies (all free / open source)
+# Python 3.11 tested. Install with:  pip install -r requirements.txt
+
+# --- Web framework ---
+Flask>=3.0.0,<4.0.0
+Werkzeug>=3.0.0,<4.0.0
+
+# --- Database driver (MySQL 8) ---
+mysql-connector-python>=8.4.0,<10.0.0
+
+# --- Configuration ---
+python-dotenv>=1.0.1,<2.0.0
+
+# --- PDF resume parsing ---
+PyMuPDF>=1.24.0,<2.0.0
+
+# --- NLP (optional but recommended; app works without it) ---
+spacy>=3.8.0,<4.0.0
+
+# --- Machine learning ---
+scikit-learn>=1.5.0,<2.0.0
+pandas>=2.2.3,<3.0.0
+numpy>=1.26.0,<3.0.0
+
+# --- Fuzzy string matching for skill aliases ---
+rapidfuzz>=3.9.0,<4.0.0
+
+# --- Optional local LLM calls (Ollama HTTP API) ---
+requests>=2.32.0,<3.0.0
+
+# --- Testing ---
+pytest>=8.2.0,<9.0.0
+
+# --- Optional dev utility: generate PDF fixtures for manual testing ---
+fpdf2>=2.7.9,<3.0.0
+
+# After installing, download the small English model once (12 MB):
+#   python -m spacy download en_core_web_sm
+# If this fails, set SPACY_ENABLED=false in .env. The skill extractor
+# falls back to a regex tokenizer automatically.

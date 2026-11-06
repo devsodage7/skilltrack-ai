@@ -1,0 +1,178 @@
+{% extends 'base.html' %}
+{% block title %}Skill gap analysis{% endblock %}
+{% block page_title %}Skill gap analysis{% endblock %}
+{% block page_subtitle %}Weighted comparison of your current level against the requirements of a role.{% endblock %}
+
+{% block content %}
+
+<section class="card-panel mb-4">
+  <form method="get" class="row g-3 align-items-end">
+    <div class="col-md-6 col-lg-5">
+      <label class="form-label" for="career">Career path</label>
+      <select class="form-select" id="career" name="career" data-autosubmit>
+        {% for c in careers %}
+          <option value="{{ c.id }}" {{ 'selected' if c.id == selected_id }}>{{ c.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3">
+      <button class="btn btn-brand" type="submit">Recalculate</button>
+    </div>
+    <div class="col-md-3 ms-auto text-md-end">
+      {% if not is_goal %}
+        <form method="post" action="{{ url_for('careers.select', career_id=selected_id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn-soft" type="submit">Set as my goal</button>
+        </form>
+      {% else %}
+        <span class="chip">Current goal</span>
+      {% endif %}
+    </div>
+  </form>
+</section>
+
+{% if analysis.career %}
+<div class="row g-4 mb-4">
+  <div class="col-lg-4">
+    <section class="card-panel h-100 readiness-panel">
+      <div class="panel-head">
+        <h2>{{ analysis.career.name }}</h2>
+        <p>{{ analysis.career.description }}</p>
+      </div>
+
+      <div class="ring" style="--value: {{ analysis.readiness }}" role="img"
+           aria-label="Readiness {{ '%.1f'|format(analysis.readiness) }} percent">
+        <div class="ring-inner">
+          <span class="ring-value">{{ '%.0f'|format(analysis.readiness) }}<small>%</small></span>
+          <span class="ring-label">ready</span>
+        </div>
+      </div>
+
+      <p class="text-center mt-3 mb-0">
+        <span class="badge text-bg-primary">{{ analysis.band }}</span>
+      </p>
+
+      {% if analysis.totals.reason %}
+        <div class="alert alert-warning mt-3 mb-0 small">{{ analysis.totals.reason }}</div>
+      {% endif %}
+    </section>
+  </div>
+
+  <div class="col-lg-8">
+    <div class="row g-3 mb-3">
+      <div class="col-6 col-xl-3">
+        <div class="stat-card">
+          <span class="stat-label">Strong</span>
+          <span class="stat-value text-success">{{ analysis.counts.strong }}</span>
+          <span class="stat-note">at or above 75% of required</span>
+        </div>
+      </div>
+      <div class="col-6 col-xl-3">
+        <div class="stat-card">
+          <span class="stat-label">Intermediate</span>
+          <span class="stat-value text-info">{{ analysis.counts.intermediate }}</span>
+          <span class="stat-note">40% to 75%</span>
+        </div>
+      </div>
+      <div class="col-6 col-xl-3">
+        <div class="stat-card">
+          <span class="stat-label">Weak</span>
+          <span class="stat-value text-warning">{{ analysis.counts.weak }}</span>
+          <span class="stat-note">below 40%</span>
+        </div>
+      </div>
+      <div class="col-6 col-xl-3">
+        <div class="stat-card">
+          <span class="stat-label">Missing</span>
+          <span class="stat-value text-danger">{{ analysis.counts.missing }}</span>
+          <span class="stat-note">{{ analysis.no_evidence }} with no evidence</span>
+        </div>
+      </div>
+    </div>
+
+    <section class="card-panel">
+      <div class="panel-head">
+        <h2>If you close your top {{ projection.skills|length }} gaps</h2>
+        <p>Readiness would move to {{ '%.0f'|format(projection.readiness) }}% ({{ '+' if projection.gain >= 0 }}{{ '%.1f'|format(projection.gain) }} points).</p>
+      </div>
+      <div class="row g-2">
+        {% for s in projection.skills %}
+          <div class="col-md-4">
+            <div class="projection-chip">{{ s.skill_name }}</div>
+          </div>
+        {% else %}
+          <div class="col-12 text-success small">Nothing left to close for this role.</div>
+        {% endfor %}
+      </div>
+    </section>
+  </div>
+</div>
+
+<section class="card-panel">
+  <div class="panel-head d-flex justify-content-between align-items-start gap-3">
+    <div>
+      <h2>Requirement breakdown</h2>
+      <p>Sorted by weight. Gap = max(0, required &minus; current); current is capped at required in the score.</p>
+    </div>
+    <span class="chip">{{ analysis.counted_rows|length }} requirements</span>
+  </div>
+
+  {% if analysis.rows %}
+    <div class="table-responsive">
+      <table class="table align-middle app-table">
+        <thead>
+          <tr>
+            <th>Skill</th>
+            <th>Category</th>
+            <th class="text-end">Weight</th>
+            <th class="text-end">Required</th>
+            <th class="text-end">Current</th>
+            <th class="text-end">Gap</th>
+            <th>Status</th>
+            <th>Evidence</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in analysis.rows %}
+            <tr class="{{ 'row-gap' if row.gap > 0 and row.weight >= 0.1 }}">
+              <td class="fw-semibold">{{ row.skill_name }}</td>
+              <td><span class="chip">{{ row.category }}</span></td>
+              <td class="text-end">{{ '%.2f'|format(row.weight) }}</td>
+              <td class="text-end">{{ '%.1f'|format(row.required_level) }}</td>
+              <td class="text-end">{{ '%.1f'|format(row.current_level) }}</td>
+              <td class="text-end fw-semibold {{ 'text-danger' if row.gap > 0 else 'text-success' }}">
+                {{ '%.1f'|format(row.gap) }}
+              </td>
+              <td>
+                {% set tone = {'strong': 'success', 'intermediate': 'info', 'weak': 'warning', 'missing': 'secondary'}.get(row.status, 'secondary') %}
+                <span class="badge text-bg-{{ tone }}">{{ row.status }}</span>
+              </td>
+              <td class="evidence-cell">
+                {% if row.self_level is not none %}<span class="chip chip-self" title="Self rating">Self {{ '%.1f'|format(row.self_level) }}</span>{% endif %}
+                {% if row.resume_level is not none %}<span class="chip chip-resume" title="Resume evidence">CV {{ '%.1f'|format(row.resume_level) }}</span>{% endif %}
+                {% if row.quiz_level is not none %}<span class="chip chip-quiz" title="Quiz evidence">Quiz {{ '%.1f'|format(row.quiz_level) }}</span>{% endif %}
+                {% if row.self_level is none and row.resume_level is none and row.quiz_level is none %}
+                  <span class="text-muted small">none</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <strong>No requirements for this career</strong>
+      <p>An administrator has not mapped skills to this role yet.</p>
+    </div>
+  {% endif %}
+
+  <p class="small text-muted mb-0 mt-3">{{ analysis.disclaimer }}</p>
+</section>
+{% else %}
+  <div class="card-panel empty-state">
+    <strong>Career not found</strong>
+    <p>Pick another path from the list above.</p>
+  </div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,58 @@
+{% extends 'auth/base_auth.html' %}
+{% block title %}Create account{% endblock %}
+
+{% block auth_content %}
+<h1 class="auth-title">Create your account</h1>
+<p class="auth-sub">Takes a minute. Your data stays on this machine.</p>
+
+{% if errors.get('form') %}
+  <div class="alert alert-danger" role="alert">{{ errors.form }}</div>
+{% endif %}
+
+<form method="post" novalidate>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  <div class="mb-3">
+    <label class="form-label" for="full_name">Full name</label>
+    <input type="text" class="form-control {{ 'is-invalid' if errors.get('full_name') }}"
+           id="full_name" name="full_name" value="{{ form.full_name }}"
+           placeholder="e.g. Aarav Patil" autocomplete="name" required>
+    {% if errors.get('full_name') %}<div class="invalid-feedback">{{ errors.full_name }}</div>{% endif %}
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label" for="email">Email address</label>
+    <input type="email" class="form-control {{ 'is-invalid' if errors.get('email') }}"
+           id="email" name="email" value="{{ form.email }}"
+           placeholder="name@college.edu" autocomplete="email" required>
+    {% if errors.get('email') %}<div class="invalid-feedback">{{ errors.email }}</div>{% endif %}
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label" for="password">Password</label>
+    <div class="input-group">
+      <input type="password" class="form-control {{ 'is-invalid' if errors.get('password') }}"
+             id="password" name="password" placeholder="At least 8 characters"
+             autocomplete="new-password" required>
+      <button class="btn btn-outline-secondary" type="button"
+              data-toggle-password="password" aria-label="Show password">Show</button>
+      {% if errors.get('password') %}<div class="invalid-feedback">{{ errors.password }}</div>{% endif %}
+    </div>
+    <div class="form-text">Capital letter, small letter, digit and a special character.</div>
+  </div>
+
+  <div class="mb-4">
+    <label class="form-label" for="confirm_password">Confirm password</label>
+    <input type="password" class="form-control {{ 'is-invalid' if errors.get('confirm_password') }}"
+           id="confirm_password" name="confirm_password"
+           autocomplete="new-password" required>
+    {% if errors.get('confirm_password') %}<div class="invalid-feedback">{{ errors.confirm_password }}</div>{% endif %}
+  </div>
+
+  <button type="submit" class="btn btn-brand w-100" data-loading="Creating account...">Create account</button>
+</form>
+
+<p class="auth-switch">
+  Already registered? <a href="{{ url_for('auth.login') }}">Log in instead</a>
+</p>
+{% endblock %}

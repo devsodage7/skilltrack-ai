@@ -1,0 +1,211 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Hello, {{ current_user.full_name.split(' ')[0] }}{% endblock %}
+{% block page_subtitle %}Here is where your skill profile stands today.{% endblock %}
+
+{% block content %}
+
+{% if completion < 70 %}
+  <div class="notice">
+    <div>
+      <strong>Your profile is {{ completion }}% complete.</strong>
+      <p>Add your target career and skill ratings to unlock accurate gap analysis.</p>
+    </div>
+    <a class="btn btn-brand btn-sm" href="{{ url_for('student.profile') }}">Complete profile</a>
+  </div>
+{% endif %}
+
+{% if snapshot %}
+  <div class="notice">
+    <div>
+      <strong>{{ snapshot.career }} readiness: {{ '%.0f'|format(snapshot.readiness) }}% ({{ snapshot.band }})</strong>
+      <p>
+        {% if snapshot.top_gaps %}
+          Biggest gaps: {{ snapshot.top_gaps[:3]|map(attribute='skill_name')|join(', ') }}.
+        {% else %}
+          Every weighted requirement is covered.
+        {% endif %}
+      </p>
+    </div>
+    <div class="d-flex gap-2">
+      <a class="btn btn-brand btn-sm" href="{{ url_for('careers.gap') }}">Gap analysis</a>
+      <a class="btn btn-soft btn-sm" href="{{ url_for('roadmap.index') }}">Roadmap</a>
+    </div>
+  </div>
+{% endif %}
+
+<div class="row g-4 mb-4">
+  <div class="col-6 col-xl-3">
+    <div class="stat-card">
+      <span class="stat-label">{{ 'Readiness' if snapshot else 'Skills tracked' }}</span>
+      <span class="stat-value {{ 'text-success' if snapshot and snapshot.readiness >= 70 else '' }}">
+        {% if snapshot %}{{ '%.0f'|format(snapshot.readiness) }}<small class="stat-unit">%</small>{% else %}{{ skills|length }}{% endif %}
+      </span>
+      <span class="stat-note">{{ snapshot.career if snapshot else 'with evidence on record' }}</span>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="stat-card">
+      <span class="stat-label">Strong</span>
+      <span class="stat-value text-success">{{ strong|length }}</span>
+      <span class="stat-note">level 4.0 and above</span>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="stat-card">
+      <span class="stat-label">Developing</span>
+      <span class="stat-value text-primary">{{ developing|length }}</span>
+      <span class="stat-note">between 2.0 and 4.0</span>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="stat-card">
+      <span class="stat-label">Needs work</span>
+      <span class="stat-value text-warning">{{ weak|length }}</span>
+      <span class="stat-note">below 2.0</span>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-xl-3">
+    <a class="quick-card" href="{{ url_for('resume.index') }}">
+      <span class="quick-label">Resume analyser</span>
+      <strong>{{ resume_count }} uploaded</strong>
+      <small>Turn your CV into skill evidence</small>
+    </a>
+  </div>
+  <div class="col-6 col-xl-3">
+    <a class="quick-card" href="{{ url_for('assessment.index') }}">
+      <span class="quick-label">Skill assessment</span>
+      <strong>{{ recent_attempts|length }} recent attempt(s)</strong>
+      <small>Quiz evidence carries 40% weight</small>
+    </a>
+  </div>
+  <div class="col-6 col-xl-3">
+    <a class="quick-card" href="{{ url_for('roadmap.index') }}">
+      <span class="quick-label">Learning roadmap</span>
+      <strong>Week-by-week plan</strong>
+      <small>Prerequisite-aware and regenerable</small>
+    </a>
+  </div>
+  <div class="col-6 col-xl-3">
+    <a class="quick-card" href="{{ url_for('careers.recommendations') }}">
+      <span class="quick-label">Recommendations</span>
+      <strong>{{ recommendation.career.name if recommendation else 'Rank all careers' }}</strong>
+      <small>
+        {% if recommendation %}{{ '%.0f'|format(recommendation.final_score) }}/100 fit{% else %}Readiness + interests{% endif %}
+      </small>
+    </a>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-7">
+    <section class="card-panel h-100">
+      <div class="panel-head">
+        <h2>Your skill profile</h2>
+        <p>Combined level from self rating, resume evidence and quizzes.</p>
+      </div>
+
+      {% if skills %}
+        <div class="table-responsive">
+          <table class="table align-middle app-table">
+            <thead>
+              <tr><th>Skill</th><th>Category</th><th class="text-end">Level</th>{% if goal %}<th class="text-end">Required</th>{% endif %}</tr>
+            </thead>
+            <tbody>
+              {% for row in skills %}
+                <tr>
+                  <td class="fw-semibold">{{ row.skill_name }}</td>
+                  <td><span class="chip">{{ row.skill_category }}</span></td>
+                  <td class="text-end">
+                    <span class="badge text-bg-{{ row.current_level|level_badge }}">
+                      {{ '%.1f'|format(row.current_level|float) }}
+                    </span>
+                  </td>
+                  {% if goal %}
+                    <td class="text-end text-muted">
+                      {% set req = requirements_by_skill.get(row.skill_id) %}
+                      {{ req.required_level if req else '—' }}
+                    </td>
+                  {% endif %}
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <strong>No skills yet</strong>
+          <p>Rate a few skills in your profile to start tracking progress.</p>
+          <a class="btn btn-brand btn-sm" href="{{ url_for('student.profile') }}">Add skills</a>
+        </div>
+      {% endif %}
+    </section>
+  </div>
+
+  <div class="col-lg-5">
+    <section class="card-panel mb-4">
+      <div class="panel-head">
+        <h2>Target career</h2>
+        <p>The role your gaps are measured against.</p>
+      </div>
+
+      {% if goal %}
+        <div class="goal-card">
+          <span class="goal-name">{{ goal.name }}</span>
+          <p>{{ goal.description }}</p>
+          <div class="d-flex flex-wrap gap-2">
+            <a class="btn btn-brand btn-sm" href="{{ url_for('careers.gap') }}">Gap analysis</a>
+            <a class="btn btn-soft btn-sm" href="{{ url_for('careers.catalog') }}">Change goal</a>
+          </div>
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <strong>No career selected</strong>
+          <p>Pick a target role to see a weighted gap analysis and roadmap.</p>
+          <a class="btn btn-brand btn-sm" href="{{ url_for('careers.catalog') }}">Choose career</a>
+        </div>
+      {% endif %}
+    </section>
+
+    <section class="card-panel">
+      <div class="panel-head">
+        <h2>Next steps</h2>
+        <p>Modules unlock as you add evidence.</p>
+      </div>
+      <ul class="step-list">
+        <li class="{{ 'done' if completion >= 70 }}">
+          <span class="step-dot"></span>
+          <span>
+            <strong><a href="{{ url_for('student.profile') }}">Complete your profile</a></strong>
+            <small>Academic details, goal and skill ratings.</small>
+          </span>
+        </li>
+        <li class="{{ 'done' if resume_count }}">
+          <span class="step-dot"></span>
+          <span>
+            <strong><a href="{{ url_for('resume.index') }}">Add resume evidence</a></strong>
+            <small>{{ 'Latest CV analysed' if resume_count else 'Upload a text PDF - it never leaves this machine.' }}</small>
+          </span>
+        </li>
+        <li class="{{ 'done' if recent_attempts }}">
+          <span class="step-dot"></span>
+          <span>
+            <strong><a href="{{ url_for('assessment.index') }}">Take a skill assessment</a></strong>
+            <small>{{ 'Quiz evidence stored' if recent_attempts else 'Quiz evidence carries the highest weight.' }}</small>
+          </span>
+        </li>
+        <li>
+          <span class="step-dot"></span>
+          <span>
+            <strong><a href="{{ url_for('roadmap.index') }}">Follow your roadmap</a></strong>
+            <small>Prerequisite-aware topics packed into your weekly hours.</small>
+          </span>
+        </li>
+      </ul>
+    </section>
+  </div>
+</div>
+{% endblock %}

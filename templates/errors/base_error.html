@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Error{% endblock %} &middot; SkillTrack AI</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bootstrap.min.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+<body class="error-body">
+  <main class="error-wrap">
+    <div class="error-card">
+      <span class="error-code">{% block code %}!{% endblock %}</span>
+      <h1>{% block heading %}{{ title }}{% endblock %}</h1>
+      <p>{% block message %}{{ message }}{% endblock %}</p>
+      <div class="d-flex gap-2 justify-content-center flex-wrap">
+        <a class="btn btn-brand" href="{{ url_for('auth.index') }}">Go to start</a>
+        <a class="btn btn-soft" href="javascript:history.back()">Go back</a>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

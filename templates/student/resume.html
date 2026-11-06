@@ -1,0 +1,191 @@
+{% extends 'base.html' %}
+{% block title %}Resume analyser{% endblock %}
+{% block page_title %}Resume analyser{% endblock %}
+{% block page_subtitle %}Your CV is read locally: text is extracted, skills are detected, and each level is fused with your other evidence.{% endblock %}
+
+{% block content %}
+
+{% if not hint.has_goal %}
+  <div class="notice">
+    <div>
+      <strong>Pick a target career first</strong>
+      <p>The analyser can still read your CV, but it can only compute a match score against a goal.</p>
+    </div>
+    <a class="btn btn-brand btn-sm" href="{{ url_for('careers.catalog') }}">Choose a career</a>
+  </div>
+{% endif %}
+
+<div class="row g-4">
+  <div class="col-lg-5">
+    <section class="card-panel mb-4">
+      <div class="panel-head">
+        <h2>Upload a resume</h2>
+        <p>PDF only, up to {{ max_mb }} MB. Nothing leaves this machine.</p>
+      </div>
+
+      <form method="post" action="{{ url_for('resume.upload') }}" enctype="multipart/form-data" data-upload-form>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <label class="upload-drop" for="resume" data-drop-zone>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5"/>
+            <path d="M4 15v3.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V15"/>
+          </svg>
+          <strong>Choose a PDF or drop it here</strong>
+          <span data-file-name>No file selected</span>
+        </label>
+        <input class="visually-hidden" type="file" id="resume" name="resume" accept="application/pdf,.pdf" required data-file-input>
+
+        {% if hint.has_goal %}
+          <p class="form-text mt-3 mb-2">Match score is calculated against <strong>{{ hint.goal_name }}</strong>.</p>
+        {% endif %}
+
+        <button type="submit" class="btn btn-brand w-100 mt-2" data-loading="Analysing your resume...">
+          Analyse resume
+        </button>
+      </form>
+
+      <p class="small text-muted mt-3 mb-0">
+        Detected skills become CV evidence (30% of your fused level). A skill only in a
+        bullet list gets a lower level than one used inside projects or experience.
+      </p>
+    </section>
+
+    <section class="card-panel">
+      <div class="panel-head">
+        <h2>Upload history</h2>
+        <p>{{ hint.resume_count }} resume(s) analysed so far.</p>
+      </div>
+
+      {% if history %}
+        <div class="history-list">
+          {% for item in history %}
+            <div class="history-item">
+              <div class="history-main">
+                <strong>{{ item.original_name }}</strong>
+                <small>
+                  {{ item.uploaded_at.strftime('%d %b %Y, %H:%M') if item.uploaded_at else '' }}
+                  &middot; {{ item.file_kb }} KB &middot; {{ item.detected_count }} skills
+                  {% if item.match_score is not none %}&middot; match {{ '%.0f'|format(item.match_score) }}%{% endif %}
+                </small>
+              </div>
+              <form method="post" action="{{ url_for('resume.delete', record_id=item.id) }}"
+                    onsubmit="return confirm('Remove this resume record?');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn-sm btn-soft" type="submit">Remove</button>
+              </form>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <strong>No resume yet</strong>
+          <p>Upload your latest CV to create resume evidence.</p>
+        </div>
+      {% endif %}
+    </section>
+  </div>
+
+  <div class="col-lg-7">
+    {% if latest %}
+      <section class="card-panel mb-4">
+        <div class="panel-head d-flex justify-content-between align-items-start gap-3">
+          <div>
+            <h2>Latest analysis</h2>
+            <p>{{ latest.original_name }} &middot; {{ latest.file_kb }} KB</p>
+          </div>
+          {% if latest.match_score is not none %}
+            <span class="badge text-bg-primary">{{ '%.1f'|format(latest.match_score) }}% CV match</span>
+          {% endif %}
+        </div>
+
+        <div class="row g-3 mb-2">
+          <div class="col-4">
+            <div class="mini-stat"><span>Skills detected</span><strong>{{ latest.detected_list|length }}</strong></div>
+          </div>
+          <div class="col-4">
+            <div class="mini-stat"><span>Missing vs goal</span><strong>{{ latest.missing_list|length }}</strong></div>
+          </div>
+          <div class="col-4">
+            <div class="mini-stat"><span>Uploaded</span><strong class="small-value">{{ latest.uploaded_at.strftime('%d %b') if latest.uploaded_at else '-' }}</strong></div>
+          </div>
+        </div>
+
+        {% if latest.detected_list %}
+          <div class="table-responsive">
+            <table class="table align-middle app-table">
+              <thead>
+                <tr><th>Skill</th><th class="text-end">CV level</th><th class="text-end">Mentions</th><th>Why</th></tr>
+              </thead>
+              <tbody>
+                {% for row in latest.detected_list %}
+                  <tr>
+                    <td class="fw-semibold">{{ row.name }}</td>
+                    <td class="text-end">
+                      <span class="badge text-bg-{{ row.level|level_badge }}">{{ '%.1f'|format(row.level) }}</span>
+                    </td>
+                    <td class="text-end text-muted">{{ row.mentions }}</td>
+                    <td class="small text-muted">{{ row.signals|join(', ') }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="empty-state">
+            <strong>No recognizable skills</strong>
+            <p>Try a text-based PDF with a clear skills or projects section.</p>
+          </div>
+        {% endif %}
+
+        {% if latest.missing_list %}
+          <div class="mt-3">
+            <span class="small text-uppercase text-muted fw-bold">Missing for {{ hint.goal_name or 'your goal' }}</span>
+            <div class="chip-cloud mt-2">
+              {% for name in latest.missing_list[:18] %}
+                <span class="chip chip-missing">{{ name }}</span>
+              {% endfor %}
+              {% if latest.missing_list|length > 18 %}
+                <span class="chip">+{{ latest.missing_list|length - 18 }} more</span>
+              {% endif %}
+            </div>
+          </div>
+        {% endif %}
+      </section>
+
+      {% if latest.detected_list %}
+        <section class="card-panel">
+          <div class="panel-head">
+            <h2>Evidence detail</h2>
+            <p>Why each skill got its level, with the matched text from your CV.</p>
+          </div>
+          <div class="snippet-list">
+            {% for row in latest.detected_list[:8] %}
+              <div class="snippet-item">
+                <div class="snippet-head">
+                  <strong>{{ row.name }}</strong>
+                  <span class="chip">{{ '%.1f'|format(row.level) }} / 5</span>
+                </div>
+                {% if row.snippet %}
+                  <p class="snippet-text">&ldquo;{{ row.snippet }}&rdquo;</p>
+                {% endif %}
+                <small class="text-muted">{{ row.signals|join(' &middot; ') }}</small>
+              </div>
+            {% endfor %}
+          </div>
+          <p class="small text-muted mb-0">
+            The full text is stored with the record and is never sent to any external service.
+          </p>
+        </section>
+      {% endif %}
+    {% else %}
+      <section class="card-panel">
+        <div class="empty-state">
+          <strong>Nothing analysed yet</strong>
+          <p>Upload a PDF on the left. You will see detected skills, their evidence level and the skills missing for your goal.</p>
+        </div>
+      </section>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

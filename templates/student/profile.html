@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+{% block title %}My profile{% endblock %}
+{% block page_title %}My profile{% endblock %}
+{% block page_subtitle %}Your inputs drive every score in the system &mdash; keep them honest.{% endblock %}
+
+{% block content %}
+{% if errors.get('form') %}
+  <div class="alert alert-danger">{{ errors.form }}</div>
+{% endif %}
+
+<form method="post" novalidate id="profile-form">
+
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  <div class="row g-4">
+
+    <!-- Left column: details -->
+    <div class="col-lg-7">
+
+      <section class="card-panel">
+        <div class="panel-head">
+          <h2>Academic details</h2>
+          <p>Used to personalise your career suggestions.</p>
+        </div>
+
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label" for="full_name">Full name</label>
+            <input class="form-control {{ 'is-invalid' if errors.get('full_name') }}"
+                   id="full_name" name="full_name" value="{{ form.full_name }}" required>
+            {% if errors.get('full_name') %}<div class="invalid-feedback">{{ errors.full_name }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label" for="phone">Phone (optional)</label>
+            <input class="form-control {{ 'is-invalid' if errors.get('phone') }}"
+                   id="phone" name="phone" value="{{ form.phone or '' }}">
+            {% if errors.get('phone') %}<div class="invalid-feedback">{{ errors.phone }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label" for="education">Education</label>
+            <input class="form-control" id="education" name="education"
+                   value="{{ form.education or '' }}" placeholder="B.Tech">
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label" for="branch">Branch</label>
+            <input class="form-control" id="branch" name="branch"
+                   value="{{ form.branch or '' }}" placeholder="AI and ML">
+          </div>
+
+          <div class="col-md-8">
+            <label class="form-label" for="college">College</label>
+            <input class="form-control" id="college" name="college"
+                   value="{{ form.college or '' }}" placeholder="College name">
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label" for="year_of_study">Year</label>
+            <select class="form-select {{ 'is-invalid' if errors.get('year_of_study') }}"
+                    id="year_of_study" name="year_of_study">
+              <option value="">Select</option>
+              {% for y in class_years %}
+                <option value="{{ y }}" {{ 'selected' if form.year_of_study == y }}>Year {{ y }}</option>
+              {% endfor %}
+            </select>
+            {% if errors.get('year_of_study') %}<div class="invalid-feedback">{{ errors.year_of_study }}</div>{% endif %}
+          </div>
+        </div>
+      </section>
+
+      <section class="card-panel">
+        <div class="panel-head">
+          <h2>Career goal and time</h2>
+          <p>We compare you against this role first.</p>
+        </div>
+
+        <div class="row g-3">
+          <div class="col-md-7">
+            <label class="form-label" for="career_goal_id">Target career</label>
+            <select class="form-select {{ 'is-invalid' if errors.get('career_goal_id') }}"
+                    id="career_goal_id" name="career_goal_id">
+              <option value="">Not decided yet</option>
+              {% for career in careers %}
+                <option value="{{ career.id }}"
+                        {{ 'selected' if form.career_goal_id == career.id }}>{{ career.name }}</option>
+              {% endfor %}
+            </select>
+            {% if errors.get('career_goal_id') %}<div class="invalid-feedback">{{ errors.career_goal_id }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-5">
+            <label class="form-label" for="weekly_hours">Study hours per week</label>
+            <input type="number" class="form-control {{ 'is-invalid' if errors.get('weekly_hours') }}"
+                   id="weekly_hours" name="weekly_hours" min="1" max="60"
+                   value="{{ form.weekly_hours or 10 }}">
+            {% if errors.get('weekly_hours') %}<div class="invalid-feedback">{{ errors.weekly_hours }}</div>{% endif %}
+          </div>
+
+          <div class="col-12">
+            <label class="form-label" for="interests">Interests</label>
+            <input class="form-control" id="interests" name="interests"
+                   value="{{ form.interests or '' }}"
+                   placeholder="e.g. NLP, dashboards, backend APIs">
+            <div class="form-text">Comma separated. These words also feed the career similarity model.</div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- Right column: skills -->
+    <div class="col-lg-5">
+      <section class="card-panel sticky-panel">
+        <div class="panel-head">
+          <h2>Skill self-assessment</h2>
+          <p>0 = never used, 5 = can teach it. Resume and quiz evidence will refine this.</p>
+        </div>
+
+        <div class="skill-scroll">
+          {% for category, items in skill_groups.items() %}
+            <div class="skill-group">
+              <h3 class="skill-group-title">{{ category }}</h3>
+              {% for skill in items %}
+                {% set row = skill_map.get(skill.id) %}
+                {% set level = (row.self_level if row else 0) or 0 %}
+                <div class="skill-row">
+                  <div class="skill-label">
+                    <span>{{ skill.name }}</span>
+                    {% if row and row.resume_level %}
+                      <span class="chip chip-resume" title="Detected in your resume">CV</span>
+                    {% endif %}
+                    {% if row and row.quiz_level %}
+                      <span class="chip chip-quiz" title="Measured by a quiz">Quiz</span>
+                    {% endif %}
+                  </div>
+                  <input type="range" min="0" max="5" step="0.5"
+                         class="form-range" name="skill_{{ skill.id }}"
+                         value="{{ '%.1f'|format(level|float) }}"
+                         data-range aria-label="{{ skill.name }} level">
+                  <output class="skill-value" data-range-output>{{ '%.1f'|format(level|float) }}</output>
+                </div>
+              {% endfor %}
+            </div>
+          {% endfor %}
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div class="save-bar">
+    <div class="save-bar-text">
+      <strong>Profile completion: {{ completion }}%</strong>
+      <span>Changes apply immediately to your readiness calculation.</span>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('student.dashboard') }}" class="btn btn-soft">Cancel</a>
+      <button type="submit" class="btn btn-brand" data-loading="Saving...">Save profile</button>
+    </div>
+  </div>
+</form>
+{% endblock %}

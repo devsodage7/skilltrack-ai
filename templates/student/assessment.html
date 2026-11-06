@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+{% block title %}Skill assessment{% endblock %}
+{% block page_title %}Skill assessment{% endblock %}
+{% block page_subtitle %}Short quizzes measure one skill at a time and feed the quiz evidence into your profile.{% endblock %}
+
+{% block content %}
+
+<section class="card-panel mb-4">
+  <form method="get" class="row g-3 align-items-end">
+    <div class="col-md-5">
+      <label class="form-label" for="career">Career path</label>
+      <select class="form-select" id="career" name="career" data-autosubmit>
+        {% for c in careers %}
+          <option value="{{ c.id }}" {{ 'selected' if c.id == selected_id }}>{{ c.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-4">
+      <button class="btn btn-brand" type="submit">Show skills</button>
+    </div>
+    <div class="col-md-3 text-md-end">
+      {% if is_goal %}
+        <span class="chip">Goal career</span>
+      {% else %}
+        <a class="btn btn-soft btn-sm" href="{{ url_for('careers.gap', career=selected_id) }}">Gap analysis</a>
+      {% endif %}
+    </div>
+  </form>
+</section>
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-xl-3">
+    <div class="stat-card">
+      <span class="stat-label">Attempts</span>
+      <span class="stat-value">{{ totals.attempts }}</span>
+      <span class="stat-note">completed quizzes</span>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="stat-card">
+      <span class="stat-label">Average score</span>
+      <span class="stat-value">{{ '%.0f'|format(totals.avg_score) }}<small class="stat-unit">%</small></span>
+      <span class="stat-note">across all attempts</span>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="stat-card">
+      <span class="stat-label">Best score</span>
+      <span class="stat-value text-success">{{ '%.0f'|format(totals.best_score) }}<small class="stat-unit">%</small></span>
+      <span class="stat-note">{{ totals.correct }} of {{ totals.total }} answers correct</span>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="stat-card">
+      <span class="stat-label">Quiz weight</span>
+      <span class="stat-value">40<small class="stat-unit">%</small></span>
+      <span class="stat-note">of your fused skill level</span>
+    </div>
+  </div>
+</div>
+
+<section class="card-panel mb-4">
+  <div class="panel-head d-flex justify-content-between align-items-start gap-3">
+    <div>
+      <h2>Skills for {{ career.name if career else 'this career' }}</h2>
+      <p>Each quiz has up to 5 questions. A quiz needs at least {{ min_questions }} answers before it can update your level.</p>
+    </div>
+    <span class="chip">{{ rows|length }} skills</span>
+  </div>
+
+  {% if rows %}
+    <div class="table-responsive">
+      <table class="table align-middle app-table">
+        <thead>
+          <tr>
+            <th>Skill</th>
+            <th class="text-end">Weight</th>
+            <th class="text-end">Required</th>
+            <th class="text-end">Current</th>
+            <th>Question bank</th>
+            <th>Last attempt</th>
+            <th class="text-end">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+            <tr>
+              <td>
+                <div class="fw-semibold">{{ row.skill_name }}</div>
+                <span class="chip">{{ row.skill_category }}</span>
+              </td>
+              <td class="text-end">{{ '%.2f'|format(row.weight) }}</td>
+              <td class="text-end">{{ '%.1f'|format(row.required_level) }}</td>
+              <td class="text-end">
+                {{ '%.1f'|format(row.current_level) }}
+                {% if row.quiz_level is not none %}
+                  <span class="chip chip-quiz">quiz {{ '%.1f'|format(row.quiz_level) }}</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if row.question_count >= 3 %}
+                  <span class="badge text-bg-success">{{ row.question_count }} validated</span>
+                {% elif row.question_count > 0 %}
+                  <span class="badge text-bg-warning">{{ row.question_count }} validated + generated</span>
+                {% else %}
+                  <span class="badge text-bg-secondary">generated on start</span>
+                {% endif %}
+              </td>
+              <td class="small text-muted">
+                {% if row.last_score is not none %}
+                  {{ '%.0f'|format(row.last_score) }}%
+                  {% if row.last_level is not none %}&middot; level {{ '%.1f'|format(row.last_level) }}{% endif %}
+                {% elif row.attempts %}
+                  {{ row.attempts }} attempt(s)
+                {% else %}
+                  not attempted
+                {% endif %}
+              </td>
+              <td class="text-end">
+                <form method="post" action="{{ url_for('assessment.start') }}">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="career_id" value="{{ selected_id }}">
+                  <input type="hidden" name="skill_id" value="{{ row.skill_id }}">
+                  <button class="btn btn-brand btn-sm" type="submit">
+                    {{ 'Retake quiz' if row.attempts else 'Start quiz' }}
+                  </button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <strong>No skills mapped to this career</strong>
+      <p>An administrator needs to add career requirements first.</p>
+    </div>
+  {% endif %}
+
+  <p class="small text-muted mb-0 mt-3">
+    Validated questions come from the seeded bank. When a skill has too few,
+    the generator adds template or local-Ollama questions and the awarded level
+    is capped at 3.0 so recognition questions cannot fake advanced proficiency.
+  </p>
+</section>
+
+<section class="card-panel">
+  <div class="panel-head d-flex justify-content-between align-items-center gap-3">
+    <div>
+      <h2>Recent attempts</h2>
+      <p>Every quiz is stored with its answers and timing.</p>
+    </div>
+    <a class="btn btn-soft btn-sm" href="{{ url_for('performance.index') }}">Performance analysis</a>
+  </div>
+
+  {% if history %}
+    <div class="table-responsive">
+      <table class="table align-middle app-table">
+        <thead>
+          <tr><th>Date</th><th>Skill</th><th class="text-end">Score</th><th class="text-end">Level</th><th>Status</th><th class="text-end"></th></tr>
+        </thead>
+        <tbody>
+          {% for item in history %}
+            <tr>
+              <td class="small">{{ item.started_at.strftime('%d %b %Y, %H:%M') if item.started_at else '-' }}</td>
+              <td class="fw-semibold">{{ item.skill_name or 'Mixed' }}</td>
+              <td class="text-end">{{ '%.0f'|format(item.score_pct or 0) }}%</td>
+              <td class="text-end">{{ '%.1f'|format(item.level_awarded) if item.level_awarded is not none else '-' }}</td>
+              <td>
+                <span class="badge text-bg-{{ 'success' if item.status == 'completed' else ('warning' if item.status == 'in_progress' else 'secondary') }}">
+                  {{ item.status.replace('_', ' ') }}
+                </span>
+              </td>
+              <td class="text-end">
+                {% if item.status == 'completed' %}
+                  <a class="btn btn-sm btn-soft" href="{{ url_for('assessment.result', assessment_id=item.id) }}">Review</a>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <strong>No attempts yet</strong>
+      <p>Start a quiz above; your first result will appear here.</p>
+    </div>
+  {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ title }}{% endblock %} &middot; {{ app_name }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bootstrap.min.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+</head>
+<body class="auth-body">
+
+<div class="auth-shell">
+
+  <section class="auth-aside">
+    <div class="auth-brand">
+      <span class="brand-mark brand-mark-lg">ST</span>
+      <span>
+        <strong>SkillTrack AI</strong>
+        <small>Skill gap detection &amp; career readiness</small>
+      </span>
+    </div>
+
+    <h2>Know exactly which skills you are missing &mdash; and in what order to learn them.</h2>
+
+    <ul class="auth-points">
+      <li>
+        <span class="point-icon">1</span>
+        <span><strong>Hybrid skill evidence</strong>Your resume, your self rating and your quiz score are fused into one honest level.</span>
+      </li>
+      <li>
+        <span class="point-icon">2</span>
+        <span><strong>Weighted gap analysis</strong>Every requirement carries a weight, so the readiness score reflects what actually matters.</span>
+      </li>
+      <li>
+        <span class="point-icon">3</span>
+        <span><strong>Prerequisite-aware roadmap</strong>Topics are ordered so you never study a skill before its foundation.</span>
+      </li>
+    </ul>
+
+    <p class="auth-note">Runs fully offline. No paid APIs, no hidden costs.</p>
+  </section>
+
+  <section class="auth-panel">
+    <div class="auth-card">
+      {% include 'partials/flash.html' %}
+      {% block auth_content %}{% endblock %}
+    </div>
+    <p class="auth-foot">B.Tech Artificial Intelligence &amp; Machine Learning &middot; final year project</p>
+  </section>
+
+</div>
+
+<script src="{{ url_for('static', filename='vendor/bootstrap.bundle.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

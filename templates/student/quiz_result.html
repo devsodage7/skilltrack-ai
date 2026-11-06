@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+{% block title %}Quiz result{% endblock %}
+{% block page_title %}Quiz result{% endblock %}
+{% block page_subtitle %}{{ data.skill.name if data.skill else 'Quiz' }} &middot; {{ data.assessment.completed_at.strftime('%d %b %Y, %H:%M') if data.assessment.completed_at else '' }}{% endblock %}
+
+{% block content %}
+
+<div class="row g-4 mb-4">
+  <div class="col-lg-4">
+    <section class="card-panel h-100 text-center">
+      <div class="panel-head">
+        <h2>{{ data.skill.name if data.skill else 'Quiz' }}</h2>
+        <p>{{ data.correct }} of {{ data.total }} correct</p>
+      </div>
+
+      <div class="ring mx-auto" style="--value: {{ data.score }}" role="img"
+           aria-label="Score {{ '%.1f'|format(data.score) }} percent">
+        <div class="ring-inner">
+          <span class="ring-value">{{ '%.0f'|format(data.score) }}<small>%</small></span>
+          <span class="ring-label">score</span>
+        </div>
+      </div>
+
+      <p class="mt-3 mb-1">
+        <span class="badge text-bg-{{ 'success' if data.score >= 75 else ('warning' if data.score >= 50 else 'danger') }}">
+          {{ 'Strong' if data.score >= 75 else ('Developing' if data.score >= 50 else 'Needs work') }}
+        </span>
+      </p>
+      {% if data.assessment.duration_sec %}
+        <p class="small text-muted mb-0">Finished in {{ (data.assessment.duration_sec / 60)|round(1) }} min</p>
+      {% endif %}
+    </section>
+  </div>
+
+  <div class="col-lg-8">
+    <section class="card-panel h-100">
+      <div class="panel-head">
+        <h2>Evidence update</h2>
+        <p>Quiz accuracy maps to a 0-5 level and then blends with your self rating and resume evidence.</p>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-6 col-md-3">
+          <div class="mini-stat"><span>Quiz level</span><strong>{{ '%.1f'|format(data.quiz_level) if data.quiz_level is not none else '-' }}</strong></div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="mini-stat"><span>Fused level</span><strong>{{ '%.1f'|format(data.current_level) if data.current_level is not none else '-' }}</strong></div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="mini-stat"><span>Self rating</span><strong>{{ '%.1f'|format(data.student_skill.self_level) if data.student_skill.self_level is not none else '-' }}</strong></div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="mini-stat"><span>Resume</span><strong>{{ '%.1f'|format(data.student_skill.resume_level) if data.student_skill.resume_level is not none else '-' }}</strong></div>
+        </div>
+      </div>
+
+      {% if data.level is none %}
+        <div class="alert alert-warning mt-3 mb-0 small">
+          Fewer than 3 answers were submitted, so this attempt did not change your skill level.
+        </div>
+      {% else %}
+        <p class="small text-muted mb-0 mt-3">
+          Fusion weights: self 30%, resume 30%, quiz 40%, renormalised over the evidence
+          that exists. A quiz with fewer than 3 validated bank questions caps the
+          awarded level at 3.0.
+        </p>
+      {% endif %}
+    </section>
+  </div>
+</div>
+
+<section class="card-panel mb-4">
+  <div class="panel-head">
+    <h2>Answer review</h2>
+    <p>Your answer, the correct answer and the explanation for every question.</p>
+  </div>
+
+  {% if data.review %}
+    <div class="review-list">
+      {% for row in data.review %}
+        <article class="review-item {{ 'is-correct' if row.is_correct else 'is-wrong' }}">
+          <div class="review-head">
+            <span class="review-mark">{{ '✓' if row.is_correct else '✕' }}</span>
+            <div class="review-question">
+              <strong>{{ row.question_text }}</strong>
+              <small class="text-muted">
+                {{ row.difficulty }} &middot; {{ row.question_type }}
+                {% if row.source != 'manual' %}&middot; generated{% endif %}
+              </small>
+            </div>
+          </div>
+
+          <div class="review-answers">
+            <div><span>Your answer</span><strong>{{ row.given_display }}</strong></div>
+            {% if not row.is_correct %}
+              <div><span>Correct answer</span><strong class="text-success">{{ row.correct_display }}</strong></div>
+            {% endif %}
+          </div>
+
+          <p class="review-explanation">{{ row.explanation }}</p>
+        </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <strong>No stored answers</strong>
+      <p>This attempt was closed without submitted answers.</p>
+    </div>
+  {% endif %}
+</section>
+
+<div class="d-flex flex-wrap gap-2">
+  <form method="post" action="{{ url_for('assessment.start') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="career_id" value="{{ current_user.career_goal_id or '' }}">
+    <input type="hidden" name="skill_id" value="{{ data.skill.id if data.skill else '' }}">
+    <button class="btn btn-brand" type="submit">Retake this quiz</button>
+  </form>
+  <a class="btn btn-soft" href="{{ url_for('assessment.index') }}">Back to assessment</a>
+  <a class="btn btn-soft" href="{{ url_for('performance.index') }}">Performance analysis</a>
+</div>
+{% endblock %}

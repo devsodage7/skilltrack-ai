@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% block title %}Admin dashboard{% endblock %}
+{% block page_title %}Platform overview{% endblock %}
+{% block page_subtitle %}Content, users and activity at a glance.{% endblock %}
+
+{% block content %}
+<div class="row g-4 mb-4">
+  <div class="col-6 col-xl-3">
+    <div class="stat-card"><span class="stat-label">Students</span><span class="stat-value">{{ stats.students }}</span><span class="stat-note">registered accounts</span></div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="stat-card"><span class="stat-label">Careers</span><span class="stat-value">{{ stats.careers }}</span><span class="stat-note">active paths</span></div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="stat-card"><span class="stat-label">Questions</span><span class="stat-value">{{ stats.questions }}</span><span class="stat-note">{{ stats.attempts }} quiz attempts</span></div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="stat-card"><span class="stat-label">Resources</span><span class="stat-value">{{ stats.resources }}</span><span class="stat-note">{{ stats.skills }} skills mapped</span></div>
+  </div>
+</div>
+
+<section class="card-panel">
+  <div class="panel-head d-flex justify-content-between align-items-start">
+    <div>
+      <h2>Recent students</h2>
+      <p>Newest accounts first.</p>
+    </div>
+    <a class="btn btn-soft btn-sm" href="{{ url_for('admin.students') }}">View all</a>
+  </div>
+
+  {% if recent_students %}
+    <div class="table-responsive">
+      <table class="table align-middle app-table">
+        <thead>
+          <tr><th>Name</th><th>Email</th><th>College</th><th>Career goal</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+          {% for s in recent_students %}
+            <tr>
+              <td class="fw-semibold">{{ s.full_name }}</td>
+              <td class="text-muted">{{ s.email }}</td>
+              <td>{{ s.college or '—' }}</td>
+              <td>{{ s.career_goal_name or 'Not set' }}</td>
+              <td>
+                {% if s.is_active %}
+                  <span class="badge text-bg-success">Active</span>
+                {% else %}
+                  <span class="badge text-bg-secondary">Inactive</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <strong>No students yet</strong>
+      <p>Accounts appear here as soon as students register.</p>
+    </div>
+  {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,60 @@
+-- =====================================================================
+--  SkillTrack AI  -  database/seed_skills.sql
+--  50 canonical skills. IDs are fixed and referenced by every other seed
+--  file and by data/skills_dictionary.json.
+--  Idempotent: INSERT IGNORE means re-running is safe.
+-- =====================================================================
+
+USE skilltrack_ai;
+
+INSERT IGNORE INTO skills (id, name, category, description) VALUES
+( 1, 'Python',               'programming', 'General purpose language used for scripting, data work, backend and ML'),
+( 2, 'Java',                 'programming', 'Object oriented language used in enterprise backend systems'),
+( 3, 'C++',                  'programming', 'Compiled language used in performance critical software'),
+( 4, 'JavaScript',           'programming', 'Programming language of the web browser and of Node.js'),
+( 5, 'TypeScript',           'programming', 'Typed superset of JavaScript for large applications'),
+( 6, 'SQL',                  'programming', 'Query language for relational databases'),
+( 7, 'R',                    'programming', 'Statistical programming language for analysis'),
+( 8, 'Bash/Shell Scripting', 'programming', 'Command line automation on Linux and Unix systems'),
+( 9, 'HTML/CSS',             'framework',   'Structure and styling of web pages'),
+(10, 'Bootstrap',            'framework',   'CSS framework for responsive user interfaces'),
+(11, 'React',                'framework',   'Component based JavaScript library for user interfaces'),
+(12, 'Node.js',              'framework',   'JavaScript runtime for server side applications'),
+(13, 'Flask',                'framework',   'Lightweight Python web framework'),
+(14, 'Django',               'framework',   'Full stack Python web framework with an ORM'),
+(15, 'REST API Design',      'framework',   'Designing predictable HTTP interfaces with resources and status codes'),
+(16, 'Git',                  'tool',        'Distributed version control system'),
+(17, 'GitHub',               'tool',        'Hosting and collaboration platform for Git repositories'),
+(18, 'Docker',               'tool',        'Container platform for packaging and running applications'),
+(19, 'Linux',                'tool',        'Unix-like operating system used on servers'),
+(20, 'Unit Testing',         'tool',        'Automated tests for individual functions and classes'),
+(21, 'CI/CD',                'tool',        'Continuous integration and continuous delivery pipelines'),
+(22, 'Pandas',               'tool',        'Python library for tabular data manipulation'),
+(23, 'NumPy',                'tool',        'Python library for numerical arrays and linear algebra'),
+(24, 'Excel',                'tool',        'Spreadsheet tool for analysis and reporting'),
+(25, 'Power BI',             'tool',        'Business intelligence and dashboard tool'),
+(26, 'Tableau',              'tool',        'Visual analytics and dashboard tool'),
+(27, 'Statistics',           'concept',     'Descriptive and inferential statistics and probability'),
+(28, 'Data Cleaning',        'concept',     'Detecting and fixing missing, duplicated and invalid data'),
+(29, 'Data Visualization',   'concept',     'Choosing and building charts that communicate findings'),
+(30, 'ETL',                  'concept',     'Extract transform load pipelines for data movement'),
+(31, 'Machine Learning',     'concept',     'Supervised, unsupervised and evaluation fundamentals'),
+(32, 'Deep Learning',        'concept',     'Neural networks, backpropagation and training'),
+(33, 'Scikit-learn',         'tool',        'Python machine learning library'),
+(34, 'TensorFlow',           'tool',        'Deep learning framework by Google'),
+(35, 'PyTorch',              'tool',        'Deep learning framework by Meta'),
+(36, 'NLP',                  'concept',     'Natural language processing techniques'),
+(37, 'Computer Vision',      'concept',     'Image and video understanding with models'),
+(38, 'Model Evaluation',     'concept',     'Cross validation, metrics, bias and variance'),
+(39, 'Feature Engineering',  'concept',     'Creating useful model inputs from raw data'),
+(40, 'MLOps',                'concept',     'Deploying, monitoring and maintaining ML models'),
+(41, 'MySQL',                'database',    'Open source relational database server'),
+(42, 'PostgreSQL',           'database',    'Advanced open source relational database'),
+(43, 'MongoDB',              'database',    'Document oriented NoSQL database'),
+(44, 'Database Design',      'database',    'Normalisation, keys, relationships and indexing'),
+(45, 'Networking',           'concept',     'TCP/IP, DNS, HTTP, routing and network troubleshooting'),
+(46, 'Cryptography',         'concept',     'Hashing, encryption, certificates and key management'),
+(47, 'Web Security',         'concept',     'OWASP risks, injection, XSS, CSRF and secure coding'),
+(48, 'SIEM Tools',           'tool',        'Security information and event management platforms'),
+(49, 'Penetration Testing',  'concept',     'Ethical testing of systems for vulnerabilities'),
+(50, 'Incident Response',    'concept',     'Detecting, containing and recovering from security incidents');

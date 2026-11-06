@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% block title %}Career paths{% endblock %}
+{% block page_title %}Career paths{% endblock %}
+{% block page_subtitle %}Readiness is recalculated from your current evidence for every role.{% endblock %}
+
+{% block content %}
+
+{% if best %}
+<div class="notice">
+  <div>
+    <strong>Closest match right now: {{ best.career.name }} ({{ '%.0f'|format(best.readiness) }}% ready)</strong>
+    <p>{{ best.band }} &middot; {{ best.top_gaps|length }} open requirement(s). This is a guide based on the evidence you entered, not an employment prediction.</p>
+  </div>
+  <a class="btn btn-brand btn-sm" href="{{ url_for('careers.gap', career=best.career.id) }}">Open gap analysis</a>
+</div>
+{% endif %}
+
+<div class="row g-4">
+  {% for a in analyses %}
+    <div class="col-md-6 col-xxl-4">
+      <article class="card-panel career-card h-100 d-flex flex-column">
+        <div class="d-flex justify-content-between align-items-start gap-2">
+          <h2 class="career-title">{{ a.career.name }}</h2>
+          {% if a.career.id == goal_id %}
+            <span class="badge text-bg-success">Your goal</span>
+          {% endif %}
+        </div>
+
+        <p class="career-desc">{{ a.career.description }}</p>
+
+        <div class="readiness-head">
+          <span class="readiness-value">{{ '%.0f'|format(a.readiness) }}<small>%</small></span>
+          <span class="chip">{{ a.band }}</span>
+        </div>
+        <div class="progress progress-slim" role="progressbar"
+             aria-valuenow="{{ a.readiness }}" aria-valuemin="0" aria-valuemax="100">
+          <div class="progress-bar bg-{{ 'success' if a.readiness >= 70 else ('warning' if a.readiness >= 40 else 'danger') }}"
+               style="width: {{ a.readiness }}%"></div>
+        </div>
+
+        <div class="gap-mini-head">
+          <span>Biggest gaps</span>
+          <span>{{ a.counts.strong }} strong / {{ a.counts.missing + a.counts.weak }} to build</span>
+        </div>
+
+        <ul class="gap-list">
+          {% for g in a.top_gaps[:3] %}
+            <li>
+              <span class="gap-name">{{ g.skill_name }}</span>
+              <span class="gap-num">-{{ '%.1f'|format(g.gap) }} lvl</span>
+            </li>
+          {% else %}
+            <li class="text-success"><span class="gap-name">No open gaps</span><span class="gap-num">ready</span></li>
+          {% endfor %}
+        </ul>
+
+        <div class="career-actions mt-auto">
+          <a class="btn btn-soft btn-sm" href="{{ url_for('careers.gap', career=a.career.id) }}">Gap analysis</a>
+          {% if a.career.id != goal_id %}
+            <form method="post" action="{{ url_for('careers.select', career_id=a.career.id) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="btn btn-brand btn-sm">Set as goal</button>
+            </form>
+          {% else %}
+            <a class="btn btn-brand btn-sm" href="{{ url_for('careers.gap') }}">Continue</a>
+          {% endif %}
+        </div>
+      </article>
+    </div>
+  {% else %}
+    <div class="col-12">
+      <div class="card-panel empty-state">
+        <strong>No career paths configured</strong>
+        <p>An administrator needs to seed the careers table.</p>
+      </div>
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+{% block title %}Learning roadmap{% endblock %}
+{% block page_title %}Learning roadmap{% endblock %}
+{% block page_subtitle %}A prerequisite-aware study plan built from your weighted gaps and weekly time.{% endblock %}
+
+{% block content %}
+
+<section class="card-panel mb-4">
+  <form method="get" class="row g-3 align-items-end">
+    <div class="col-md-5">
+      <label class="form-label" for="career">Career path</label>
+      <select class="form-select" id="career" name="career" data-autosubmit>
+        {% for c in careers %}
+          <option value="{{ c.id }}" {{ 'selected' if c.id == selected_id }}>{{ c.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3">
+      <button class="btn btn-brand" type="submit">Open plan</button>
+    </div>
+    <div class="col-md-4 text-md-end">
+      <form method="post" action="{{ url_for('roadmap.regenerate') }}"
+            onsubmit="return confirm('Rebuild the roadmap from your current gaps? Completed topics stay completed.');">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="career_id" value="{{ selected_id }}">
+        <button class="btn btn-soft" type="submit">Regenerate</button>
+      </form>
+    </div>
+  </form>
+</section>
+
+{% if plan %}
+  <div class="row g-4 mb-4">
+    <div class="col-6 col-xl-3">
+      <div class="stat-card">
+        <span class="stat-label">Weeks</span>
+        <span class="stat-value">{{ plan.total_weeks }}</span>
+        <span class="stat-note">at {{ plan.weekly_hours }} h / week</span>
+      </div>
+    </div>
+    <div class="col-6 col-xl-3">
+      <div class="stat-card">
+        <span class="stat-label">Effort</span>
+        <span class="stat-value">{{ '%.0f'|format(plan.total_hours) }}<small class="stat-unit">h</small></span>
+        <span class="stat-note">resource + practice buffer</span>
+      </div>
+    </div>
+    <div class="col-6 col-xl-3">
+      <div class="stat-card">
+        <span class="stat-label">Progress</span>
+        <span class="stat-value text-success">{{ '%.0f'|format(plan.progress.pct) }}<small class="stat-unit">%</small></span>
+        <span class="stat-note">{{ plan.progress.completed }} of {{ plan.progress.total }} topics done</span>
+      </div>
+    </div>
+    <div class="col-6 col-xl-3">
+      <div class="stat-card">
+        <span class="stat-label">Finish around</span>
+        <span class="stat-value small-value">{{ plan.estimated_finish.strftime('%d %b %Y') }}</span>
+        <span class="stat-note">if you stay on schedule</span>
+      </div>
+    </div>
+  </div>
+
+  <section class="card-panel mb-4">
+    <div class="panel-head d-flex justify-content-between align-items-center gap-3">
+      <div>
+        <h2>{{ plan.career.name }} plan</h2>
+        <p>{{ explanation }}</p>
+      </div>
+      <span class="chip">{{ plan.progress.completed }}/{{ plan.progress.total }}</span>
+    </div>
+    <div class="progress progress-slim" role="progressbar" aria-valuenow="{{ plan.progress.pct }}"
+         aria-valuemin="0" aria-valuemax="100">
+      <div class="progress-bar bg-success" style="width: {{ plan.progress.pct }}%"></div>
+    </div>
+  </section>
+
+  <div class="roadmap">
+    {% for week in plan.weeks %}
+      <section class="card-panel week-card">
+        <div class="week-head">
+          <div class="week-badge">W{{ week.week }}</div>
+          <div>
+            <h2>Week {{ week.week }}</h2>
+            <p>{{ '%.1f'|format(week.hours) }} planned hour(s)</p>
+          </div>
+        </div>
+
+        <div class="week-items">
+          {% for item in week.topics %}
+            <div class="topic {{ 'is-done' if item.status == 'completed' }} {{ 'is-progress' if item.status == 'in_progress' }}">
+              <div class="topic-main">
+                <div class="topic-title">
+                  {{ item.skill_name }}
+                  <span class="chip">{{ item.skill_category }}</span>
+                </div>
+                <div class="topic-meta">
+                  {{ item.topic_title }} &middot; {{ '%.1f'|format(item.hours) }} h
+                  {% if item.resource_title %}
+                    &middot; <a href="{{ item.resource_url }}" target="_blank" rel="noopener noreferrer">{{ item.resource_title }}</a>
+                    <span class="text-muted">({{ item.resource_provider }})</span>
+                  {% else %}
+                    &middot; <span class="text-muted">no resource linked</span>
+                  {% endif %}
+                </div>
+              </div>
+
+              <div class="topic-actions">
+                <span class="badge text-bg-{{ 'success' if item.status == 'completed' else ('warning' if item.status == 'in_progress' else 'secondary') }}">
+                  {{ item.status.replace('_', ' ') }}
+                </span>
+                <form method="post" action="{{ url_for('roadmap.update_status', progress_id=item.id) }}" class="topic-form">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="career_id" value="{{ selected_id }}">
+                  {% if item.status != 'in_progress' and item.status != 'completed' %}
+                    <button class="btn btn-sm btn-soft" name="status" value="in_progress">Start</button>
+                  {% endif %}
+                  {% if item.status != 'completed' %}
+                    <button class="btn btn-sm btn-brand" name="status" value="completed">Done</button>
+                  {% else %}
+                    <button class="btn btn-sm btn-soft" name="status" value="pending">Reopen</button>
+                  {% endif %}
+                </form>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </section>
+    {% endfor %}
+  </div>
+
+  {% if plan.overflow %}
+    <div class="alert alert-warning mt-3">
+      The plan is longer than {{ 24 }} weeks. Consider raising your weekly study hours in your profile.
+    </div>
+  {% endif %}
+{% else %}
+  <section class="card-panel">
+    <div class="empty-state">
+      <strong>Nothing to schedule</strong>
+      <p>You already meet every weighted requirement for {{ analysis.career.name if analysis.career else 'this career' }}. Try another career path or add more evidence.</p>
+      <a class="btn btn-brand btn-sm" href="{{ url_for('careers.catalog') }}">Browse careers</a>
+    </div>
+  </section>
+{% endif %}
+{% endblock %}

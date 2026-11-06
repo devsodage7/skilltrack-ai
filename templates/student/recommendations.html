@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% block title %}Career recommendations{% endblock %}
+{% block page_title %}Career recommendations{% endblock %}
+{% block page_subtitle %}Evidence coverage and your stated interests, blended into one ranking.{% endblock %}
+
+{% block content %}
+
+<div class="notice">
+  <div>
+    <strong>How this ranking works</strong>
+    <p>{{ explanation }}</p>
+  </div>
+  <a class="btn btn-soft btn-sm" href="{{ url_for('careers.catalog') }}">All career paths</a>
+</div>
+
+<div class="reco-list">
+  {% for item in ranked %}
+    <article class="card-panel reco-card {{ 'is-goal' if item.career_id == goal_id }}">
+      <div class="reco-rank">{{ loop.index }}</div>
+
+      <div class="reco-body">
+        <div class="reco-head">
+          <div>
+            <h2 class="reco-title">
+              {{ item.career.name }}
+              {% if item.career_id == goal_id %}<span class="badge text-bg-success ms-1">Your goal</span>{% endif %}
+            </h2>
+            <p class="reco-desc">{{ item.career.description }}</p>
+          </div>
+          <div class="reco-score">
+            <span class="reco-score-value">{{ '%.0f'|format(item.final_score) }}<small>/100</small></span>
+            <span class="badge text-bg-{{ 'success' if item.final_score >= 55 else ('warning' if item.final_score >= 38 else 'secondary') }}">
+              {{ item.fit }}
+            </span>
+          </div>
+        </div>
+
+        <div class="reco-metrics">
+          <div class="metric">
+            <div class="metric-head"><span>Readiness ({{ '%.0f'|format(item.blend.readiness * 100) }}% weight)</span><strong>{{ '%.0f'|format(item.readiness) }}%</strong></div>
+            <div class="progress progress-slim"><div class="progress-bar bg-primary" style="width: {{ item.readiness }}%"></div></div>
+          </div>
+          <div class="metric">
+            <div class="metric-head"><span>Interest match ({{ '%.0f'|format(item.blend.text * 100) }}% weight)</span><strong>{{ '%.0f'|format(item.text_similarity) }}%</strong></div>
+            <div class="progress progress-slim"><div class="progress-bar bg-info" style="width: {{ item.text_similarity }}%"></div></div>
+          </div>
+        </div>
+
+        <ul class="reco-reasons">
+          {% for reason in item.reasons %}
+            <li>{{ reason }}</li>
+          {% endfor %}
+        </ul>
+
+        <div class="d-flex flex-wrap gap-2 mt-2">
+          <a class="btn btn-soft btn-sm" href="{{ url_for('careers.gap', career=item.career_id) }}">Gap analysis</a>
+          {% if item.career_id != goal_id %}
+            <form method="post" action="{{ url_for('careers.select', career_id=item.career_id) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="btn btn-brand btn-sm" type="submit">Set as goal</button>
+            </form>
+          {% endif %}
+        </div>
+      </div>
+    </article>
+  {% else %}
+    <div class="card-panel empty-state">
+      <strong>No careers to rank</strong>
+      <p>An administrator has to seed the careers table first.</p>
+    </div>
+  {% endfor %}
+</div>
+
+<p class="small text-muted mt-3">{{ disclaimer }}</p>
+{% endblock %}
