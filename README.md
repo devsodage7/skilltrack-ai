@@ -8,6 +8,17 @@ roadmap — all with free and open-source tools, and without any paid API.
 > Final-year B.Tech (AI & ML) project.
 > Stack: Flask · MySQL 8 · scikit-learn · spaCy · PyMuPDF · Bootstrap 5 · Chart.js
 
+| | |
+|---|---|
+| **Repository** | <https://github.com/devsodage7/skilltrack-ai> |
+| **Live demo** | <https://acc10834ff9822.lhr.life> (temporary tunnel — active only while the demo laptop is online) |
+| **Permanent deployment** | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) — free Render + TiDB Cloud setup |
+| **Licence** | Apache-2.0 |
+
+> The demo link is a tunnel to the student's laptop, so it changes every time the
+> tunnel restarts and stops working when the laptop sleeps. Follow
+> [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for a permanent URL.
+
 ---
 
 ## 1. What it does
@@ -314,6 +325,11 @@ with the exact error and fix, instead of a stack trace.
 
 Seeded students already have self-assessments, quiz history and roadmap
 progress, so the dashboards are not empty on first login.
+
+> **Public demo:** these passwords are published in this repository, so the
+> admin account must be deactivated and passwords rotated before sharing a
+> deployment. `database/set_password.py` does this in one command — see
+> [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) step 5.
 
 ---
 
