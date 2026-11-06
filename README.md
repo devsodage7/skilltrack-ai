@@ -11,13 +11,14 @@ roadmap — all with free and open-source tools, and without any paid API.
 | | |
 |---|---|
 | **Repository** | <https://github.com/devsodage7/skilltrack-ai> |
-| **Live demo** | <https://acc10834ff9822.lhr.life> (temporary tunnel — active only while the demo laptop is online) |
-| **Permanent deployment** | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) — free Render + TiDB Cloud setup |
+| **Live demo** | <https://skilltrack-ai-zwsc.onrender.com> |
+| **Hosting** | Render Free web service + TiDB Cloud Starter (MySQL-compatible) |
 | **Licence** | Apache-2.0 |
 
-> The demo link is a tunnel to the student's laptop, so it changes every time the
-> tunnel restarts and stops working when the laptop sleeps. Follow
-> [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for a permanent URL.
+> The demo runs on a free instance, so the first visit after 15 minutes of
+> inactivity takes up to a minute to wake up. The database is a free TiDB
+> Cloud Starter cluster; see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) to
+> redeploy your own copy.
 
 ---
 
@@ -327,8 +328,9 @@ Seeded students already have self-assessments, quiz history and roadmap
 progress, so the dashboards are not empty on first login.
 
 > **Public demo:** these passwords are published in this repository, so the
-> admin account must be deactivated and passwords rotated before sharing a
-> deployment. `database/set_password.py` does this in one command — see
+> admin password is **not** the seeded one on the live site — it was rotated
+> with `database/set_password.py` after deployment. Rotate all passwords the
+> same way before sharing your own deployment. See
 > [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) step 5.
 
 ---
