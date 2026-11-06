@@ -14,7 +14,7 @@
 
 CREATE DATABASE IF NOT EXISTS skilltrack_ai
     CHARACTER SET utf8mb4
-    COLLATE utf8mb4_0900_ai_ci;
+    COLLATE utf8mb4_general_ci;
 
 USE skilltrack_ai;
 
@@ -48,7 +48,7 @@ CREATE TABLE careers (
     PRIMARY KEY (id),
     UNIQUE KEY uq_careers_name (name),
     UNIQUE KEY uq_careers_slug (slug)
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
 -- ---------------------------------------------------------------------
 -- 2. skills  (reference data: canonical skill names + categories)
@@ -62,7 +62,7 @@ CREATE TABLE skills (
     PRIMARY KEY (id),
     UNIQUE KEY uq_skills_name (name),
     KEY idx_skills_category (category)
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
 -- ---------------------------------------------------------------------
 -- 3. students  (authentication + profile; role column gives admin access)
@@ -96,7 +96,7 @@ CREATE TABLE students (
         CHECK (year_of_study IS NULL OR (year_of_study BETWEEN 1 AND 5)),
     CONSTRAINT chk_students_hours
         CHECK (weekly_hours BETWEEN 1 AND 60)
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
 -- ---------------------------------------------------------------------
 -- 4. career_skills  (requirement matrix: level, weight, prerequisite)
@@ -125,7 +125,7 @@ CREATE TABLE career_skills (
         CHECK (required_level BETWEEN 1 AND 5),
     CONSTRAINT chk_cs_weight
         CHECK (weight > 0 AND weight <= 5)
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
 -- ---------------------------------------------------------------------
 -- 5. student_skills  (the fused proficiency store - keeps all evidence)
@@ -162,7 +162,7 @@ CREATE TABLE student_skills (
         CHECK (quiz_level IS NULL OR quiz_level BETWEEN 0 AND 5),
     CONSTRAINT chk_ss_current
         CHECK (current_level BETWEEN 0 AND 5)
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
 -- ---------------------------------------------------------------------
 -- 6. questions  (manual + template + Ollama generated bank)
@@ -201,7 +201,7 @@ CREATE TABLE questions (
                    AND correct_option BETWEEN 0 AND 3)),
     CONSTRAINT chk_q_explanation
         CHECK (CHAR_LENGTH(explanation) >= 10)
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
 -- ---------------------------------------------------------------------
 -- 7. assessments  (one row per quiz attempt - header)
@@ -235,7 +235,7 @@ CREATE TABLE assessments (
         CHECK (score_pct BETWEEN 0 AND 100),
     CONSTRAINT chk_as_correct
         CHECK (correct_answers <= total_questions)
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
 -- ---------------------------------------------------------------------
 -- 8. quiz_results  (one row per answered question)
@@ -265,7 +265,7 @@ CREATE TABLE quiz_results (
         ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT chk_qr_option
         CHECK (selected_option IS NULL OR selected_option BETWEEN 0 AND 3)
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
 -- ---------------------------------------------------------------------
 -- 9. learning_resources  (free resources only, stored locally)
@@ -287,7 +287,7 @@ CREATE TABLE learning_resources (
         ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT chk_lr_hours
         CHECK (est_hours > 0 AND est_hours <= 200)
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
 -- ---------------------------------------------------------------------
 -- 10. learning_progress  (generated roadmap + student completion state)
@@ -323,7 +323,7 @@ CREATE TABLE learning_progress (
         ON DELETE SET NULL ON UPDATE CASCADE,
     CONSTRAINT chk_lp_week
         CHECK (week_number BETWEEN 1 AND 52)
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
 -- ---------------------------------------------------------------------
 -- 11. resume_records  (upload history + extraction output)
@@ -353,7 +353,7 @@ CREATE TABLE resume_records (
         ON DELETE SET NULL ON UPDATE CASCADE,
     CONSTRAINT chk_rr_size
         CHECK (file_size > 0)
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
 -- =====================================================================
 --  End of schema. Expected: 11 tables.

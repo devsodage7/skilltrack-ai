@@ -27,7 +27,7 @@ if str(ROOT) not in sys.path:
 import mysql.connector  # noqa: E402
 from mysql.connector import Error  # noqa: E402
 
-from config import Config  # noqa: E402
+from config import Config, db_ssl_options  # noqa: E402
 
 DB_DIR = Path(__file__).resolve().parent
 SCHEMA_FILE = DB_DIR / "schema.sql"
@@ -165,6 +165,7 @@ def connect(use_database: bool = True):
         autocommit=True,
         use_pure=True,
         connection_timeout=10,
+        **db_ssl_options(Config),
     )
     if use_database:
         kwargs["database"] = Config.DB_NAME
@@ -350,7 +351,7 @@ def main() -> int:
 
         cur.execute(
             f"CREATE DATABASE IF NOT EXISTS `{Config.DB_NAME}` "
-            "CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci"
+            "CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci"
         )
         cur.execute(f"USE `{Config.DB_NAME}`")
 

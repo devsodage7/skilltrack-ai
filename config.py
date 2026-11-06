@@ -61,6 +61,13 @@ class Config:
     DB_NAME = os.getenv("DB_NAME", "skilltrack_ai")
     DB_POOL_SIZE = _env_int("DB_POOL_SIZE", 5)
     DB_CHARSET = "utf8mb4"
+    # Cloud MySQL providers (TiDB Cloud, Aiven, PlanetScale, ...) require TLS.
+    #   disabled        -> plain local MySQL (default)
+    #   required        -> encrypted, certificate NOT verified
+    #   verify_ca       -> encrypted + CA verified (set DB_SSL_CA)
+    #   verify_identity -> encrypted + CA + hostname verified
+    DB_SSL_MODE = os.getenv("DB_SSL_MODE", "disabled").strip().lower()
+    DB_SSL_CA = os.getenv("DB_SSL_CA", "").strip()
 
     # ------------------------------------------------------
     # Paths
@@ -198,6 +205,57 @@ CONFIG_MAP = {
     "testing": TestingConfig,
     "production": ProductionConfig,
 }
+
+
+def db_ssl_options(cfg=None) -> dict:
+    """Translate DB_SSL_MODE / DB_SSL_CA into mysql-connector arguments.
+
+    Works with either the Config class or a Flask app.config dict, so the
+    web app and database/init_db.py share exactly one implementation.
+    """
+    def _get(key: str, default=None):
+        if cfg is None:
+            return getattr(Config, key, default)
+        if isinstance(cfg, dict):
+            return cfg.get(key, getattr(Config, key, default))
+        return getattr(cfg, key, getattr(Config, key, default))
+
+    mode = str(_get("DB_SSL_MODE", "disabled") or "disabled").strip().lower()
+    ca = str(_get("DB_SSL_CA", "") or "").strip()
+
+    if mode in {"disabled", "off", "false", "none", "0"}:
+        return {"ssl_disabled": True}
+    if mode in {"required", "on", "true", "1"}:
+        return {
+            "ssl_disabled": False,
+            "ssl_verify_cert": False,
+            "ssl_verify_identity": False,
+        }
+    if mode in {"verify_ca", "verify-ca"}:
+        if not ca:
+            raise ValueError(
+                "DB_SSL_MODE=verify_ca requires DB_SSL_CA to point to a CA PEM file."
+            )
+        return {
+            "ssl_disabled": False,
+            "ssl_ca": ca,
+            "ssl_verify_cert": True,
+            "ssl_verify_identity": False,
+        }
+    if mode in {"verify_identity", "verify-identity"}:
+        if not ca:
+            raise ValueError(
+                "DB_SSL_MODE=verify_identity requires DB_SSL_CA to point to a CA PEM file."
+            )
+        return {
+            "ssl_disabled": False,
+            "ssl_ca": ca,
+            "ssl_verify_cert": True,
+            "ssl_verify_identity": True,
+        }
+    raise ValueError(
+        f"Unknown DB_SSL_MODE={mode!r}. Use disabled, required, verify_ca or verify_identity."
+    )
 
 
 def get_config(name: str | None = None):

@@ -20,7 +20,7 @@ from typing import Any, Iterable, Sequence
 import mysql.connector
 from mysql.connector import Error, pooling
 
-from config import Config
+from config import Config, db_ssl_options
 
 logger = logging.getLogger(__name__)
 
@@ -60,6 +60,7 @@ def init_pool(config: Any = None) -> None:
             use_pure=True,
             connection_timeout=10,
             autocommit=False,
+            **db_ssl_options(cfg),
         )
     except Error as exc:
         logger.error("Could not create MySQL pool: %s", exc)

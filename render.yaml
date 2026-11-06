@@ -1,0 +1,42 @@
+services:
+  - type: web
+    name: skilltrack-ai
+    runtime: python
+    plan: free
+    region: singapore
+    buildCommand: pip install --upgrade pip && pip install -r requirements-deploy.txt
+    startCommand: gunicorn "app:create_app()" --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 120
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: FLASK_ENV
+        value: production
+      - key: FLASK_DEBUG
+        value: "0"
+      - key: SECRET_KEY
+        generateValue: true
+      # Filled in the Render dashboard after creating the free TiDB cluster.
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        value: "4000"
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_NAME
+        value: skilltrack_ai
+      - key: DB_SSL_MODE
+        value: required
+      - key: DB_POOL_SIZE
+        value: "2"
+      # Keep the free 512 MB instance comfortable.
+      - key: SPACY_ENABLED
+        value: "false"
+      - key: OLLAMA_ENABLED
+        value: "false"
+      - key: MAX_UPLOAD_MB
+        value: "5"

@@ -23,14 +23,16 @@ from flask import Flask, g, jsonify, render_template, request
 
 from app.extensions import current_user
 from app.utils.security import csrf_protect, csrf_token
-from config import Config, ensure_directories
+from config import Config, ensure_directories, get_config
 from models import db
 
 __all__ = ["create_app"]
 
 
 def create_app(config_object: Any = None) -> Flask:
-    config_object = config_object or Config
+    # FLASK_ENV decides whether development, testing or production settings
+    # are applied. Pass an explicit class/dict to override (used by tests).
+    config_object = config_object or get_config()
 
     app = Flask(
         __name__,
@@ -41,6 +43,13 @@ def create_app(config_object: Any = None) -> Flask:
         app.config.update(config_object)
     else:
         app.config.from_object(config_object)
+
+    # Behind Render / Fly / nginx the original scheme and host arrive in
+    # X-Forwarded-* headers. ProxyFix makes url_for() and secure cookies work.
+    if str(app.config.get("FLASK_ENV", "")).lower() == "production":
+        from werkzeug.middleware.proxy_fix import ProxyFix
+
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
     ensure_directories()
     _configure_logging(app)

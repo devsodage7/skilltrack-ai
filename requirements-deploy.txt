@@ -1,0 +1,4 @@
+# Deployment dependencies (Linux hosts such as Render / Railway / Fly.io)
+# Local Windows development only needs requirements.txt.
+-r requirements.txt
+gunicorn>=22.0.0,<24.0.0
